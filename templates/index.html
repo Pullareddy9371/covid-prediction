@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COVID Severity Prediction Dashboard</title>
+    <style>
+        :root {
+            --bg: #f5efe3;
+            --panel: #fffaf0;
+            --panel-strong: #ffffff;
+            --ink: #1d2a35;
+            --muted: #5e6b76;
+            --line: #d8cdbd;
+            --accent: #0f766e;
+            --accent-dark: #115e59;
+            --danger: #b42318;
+            --danger-bg: #fef3f2;
+            --success: #166534;
+            --success-bg: #ecfdf3;
+            --shadow: 0 18px 50px rgba(84, 70, 50, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 24%),
+                radial-gradient(circle at top right, rgba(180, 35, 24, 0.08), transparent 20%),
+                linear-gradient(180deg, #f7f1e8 0%, var(--bg) 100%);
+        }
+
+        .page {
+            width: min(1300px, calc(100% - 32px));
+            margin: 24px auto 40px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .hero-card,
+        .summary-card,
+        .panel {
+            background: rgba(255, 250, 240, 0.9);
+            border: 1px solid rgba(216, 205, 189, 0.9);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-card {
+            padding: 28px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.1);
+            color: var(--accent-dark);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        h1 {
+            margin: 18px 0 10px;
+            font-size: clamp(2rem, 4vw, 3.4rem);
+            line-height: 1.05;
+        }
+
+        .hero-card p,
+        .summary-card p,
+        .section-intro {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .summary-card {
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+            align-content: start;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat {
+            background: var(--panel-strong);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 16px;
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.7rem;
+            margin-bottom: 6px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.25fr 0.95fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .panel {
+            padding: 24px;
+        }
+
+        .panel h2 {
+            margin: 0 0 8px;
+            font-size: 1.4rem;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .tag {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.1);
+            color: var(--accent-dark);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 16px;
+        }
+
+        .field,
+        .field-wide {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-wide {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.93rem;
+            font-weight: 700;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 11px 12px;
+            background: #fffdf8;
+            color: var(--ink);
+            font-size: 0.96rem;
+        }
+
+        input:focus {
+            outline: 2px solid rgba(15, 118, 110, 0.18);
+            border-color: var(--accent);
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.96rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .primary-btn {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .primary-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        .secondary-btn {
+            background: #e9f5f4;
+            color: var(--accent-dark);
+        }
+
+        .ghost-btn {
+            background: #f4efe7;
+            color: var(--ink);
+        }
+
+        .danger-btn {
+            background: #fee4e2;
+            color: var(--danger);
+        }
+
+        .result-card {
+            margin-top: 20px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            display: none;
+        }
+
+        .result-card.success {
+            display: block;
+            background: var(--success-bg);
+            border: 1px solid #a6f4c5;
+            color: var(--success);
+        }
+
+        .result-card.error {
+            display: block;
+            background: var(--danger-bg);
+            border: 1px solid #fecdca;
+            color: var(--danger);
+        }
+
+        .result-card strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .records-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .record-card {
+            background: var(--panel-strong);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 18px;
+        }
+
+        .record-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .record-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .record-meta {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .severity-badge {
+            padding: 8px 10px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .severity-high {
+            background: #fee4e2;
+            color: var(--danger);
+        }
+
+        .severity-low {
+            background: #dcfae6;
+            color: var(--success);
+        }
+
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .mini-metric {
+            background: #fcfaf5;
+            border: 1px solid #ece1d1;
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .mini-metric span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+            margin-bottom: 5px;
+        }
+
+        .record-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .record-actions button {
+            padding: 10px 12px;
+            font-size: 0.88rem;
+        }
+
+        .empty-state {
+            padding: 28px 18px;
+            text-align: center;
+            border: 1px dashed var(--line);
+            border-radius: 18px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 1080px) {
+            .hero,
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page {
+                width: min(100% - 20px, 1300px);
+            }
+
+            .panel,
+            .hero-card,
+            .summary-card {
+                padding: 18px;
+                border-radius: 20px;
+            }
+
+            .form-grid,
+            .mini-grid,
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .toolbar,
+            .record-head {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="hero">
+            <div class="hero-card">
+                <span class="eyebrow">Clinical Triage Workflow</span>
+                <h1>COVID severity prediction with saved patient records</h1>
+                <p>
+                    Submit feature values, generate a severity prediction from your model,
+                    and store each case in a local database with full create, read, update,
+                    and delete support.
+                </p>
+            </div>
+
+            <aside class="summary-card">
+                <div>
+                    <h2 style="margin:0 0 8px;">Dashboard snapshot</h2>
+                    <p style="margin:0;">A lightweight front end for your trained model with SQLite-backed record management.</p>
+                </div>
+                <div class="stat-grid">
+                    <div class="stat">
+                        <strong id="recordCount">0</strong>
+                        <span>Saved records</span>
+                    </div>
+                    <div class="stat">
+                        <strong id="highCount">0</strong>
+                        <span>High severity</span>
+                    </div>
+                    <div class="stat">
+                        <strong id="lowCount">0</strong>
+                        <span>Low severity</span>
+                    </div>
+                    <div class="stat">
+                        <strong id="modeLabel">Create</strong>
+                        <span>Current mode</span>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="layout">
+            <div class="panel">
+                <div class="toolbar">
+                    <div>
+                        <h2>Prediction form</h2>
+                        <p class="section-intro">Create a new patient record or load an existing one to update it.</p>
+                    </div>
+                    <span class="tag" id="formModeTag">Create New Record</span>
+                </div>
+
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        <div class="field-wide">
+                            <label for="patient_name">Patient name</label>
+                            <input
+                                type="text"
+                                id="patient_name"
+                                name="patient_name"
+                                placeholder="Enter patient name"
+                                required
+                            >
+                        </div>
+
+                        {% for feature in feature_names %}
+                        <div class="field">
+                            <label for="{{ feature }}">{{ feature }}</label>
+                            <input
+                                type="number"
+                                step="any"
+                                id="{{ feature }}"
+                                name="{{ feature }}"
+                                value="0"
+                                required
+                            >
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="primary-btn" id="submitButton">Save prediction</button>
+                        <button type="button" class="secondary-btn" id="updateButton" hidden>Update record</button>
+                        <button type="button" class="ghost-btn" id="resetButton">Clear form</button>
+                    </div>
+                </form>
+
+                <div id="resultCard" class="result-card"></div>
+            </div>
+
+            <div class="panel">
+                <div class="toolbar">
+                    <div>
+                        <h2>Saved records</h2>
+                        <p class="section-intro">Browse existing predictions and use the action buttons to manage them.</p>
+                    </div>
+                    <button type="button" class="ghost-btn" id="refreshButton">Refresh</button>
+                </div>
+
+                <div id="recordsList" class="records-list">
+                    <div class="empty-state">No records yet. Submit your first prediction to start the database log.</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const featureNames = {{ feature_names|tojson }};
+        const form = document.getElementById("predictionForm");
+        const resultCard = document.getElementById("resultCard");
+        const recordsList = document.getElementById("recordsList");
+        const submitButton = document.getElementById("submitButton");
+        const updateButton = document.getElementById("updateButton");
+        const resetButton = document.getElementById("resetButton");
+        const refreshButton = document.getElementById("refreshButton");
+        const formModeTag = document.getElementById("formModeTag");
+        const modeLabel = document.getElementById("modeLabel");
+        const recordCount = document.getElementById("recordCount");
+        const highCount = document.getElementById("highCount");
+        const lowCount = document.getElementById("lowCount");
+
+        let editingRecordId = null;
+
+        function setResult(type, title, message) {
+            resultCard.className = `result-card ${type}`;
+            resultCard.innerHTML = `<strong>${title}</strong><span>${message}</span>`;
+        }
+
+        function clearResult() {
+            resultCard.className = "result-card";
+            resultCard.innerHTML = "";
+        }
+
+        function resetForm() {
+            form.reset();
+            document.getElementById("patient_name").value = "";
+            for (const feature of featureNames) {
+                document.getElementById(feature).value = 0;
+            }
+            editingRecordId = null;
+            submitButton.hidden = false;
+            updateButton.hidden = true;
+            formModeTag.textContent = "Create New Record";
+            modeLabel.textContent = "Create";
+            clearResult();
+        }
+
+        function collectPayload() {
+            const payload = {
+                patient_name: document.getElementById("patient_name").value.trim()
+            };
+
+            for (const feature of featureNames) {
+                payload[feature] = document.getElementById(feature).value;
+            }
+
+            return payload;
+        }
+
+        function fillForm(record) {
+            editingRecordId = record.id;
+            document.getElementById("patient_name").value = record.patient_name;
+
+            for (const feature of featureNames) {
+                document.getElementById(feature).value = record.features[feature] ?? 0;
+            }
+
+            submitButton.hidden = true;
+            updateButton.hidden = false;
+            formModeTag.textContent = `Editing Record #${record.id}`;
+            modeLabel.textContent = "Edit";
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setResult("success", "Record loaded", `You are now editing ${record.patient_name}.`);
+        }
+
+        function updateStats(records) {
+            recordCount.textContent = records.length;
+            highCount.textContent = records.filter((record) => record.prediction_value === 1).length;
+            lowCount.textContent = records.filter((record) => record.prediction_value === 0).length;
+        }
+
+        function renderRecords(records) {
+            updateStats(records);
+
+            if (!records.length) {
+                recordsList.innerHTML = '<div class="empty-state">No records yet. Submit your first prediction to start the database log.</div>';
+                return;
+            }
+
+            recordsList.innerHTML = records.map((record) => {
+                const severityClass = record.prediction_value === 1 ? "severity-high" : "severity-low";
+                return `
+                    <article class="record-card">
+                        <div class="record-head">
+                            <div>
+                                <div class="record-name">${record.patient_name}</div>
+                                <div class="record-meta">Record #${record.id} - Updated ${record.updated_at}</div>
+                            </div>
+                            <span class="severity-badge ${severityClass}">${record.prediction_label}</span>
+                        </div>
+
+                        <div class="mini-grid">
+                            <div class="mini-metric">
+                                <span>Age</span>
+                                <strong>${record.features["Age"] ?? 0}</strong>
+                            </div>
+                            <div class="mini-metric">
+                                <span>Temp</span>
+                                <strong>${record.features["Temp"] ?? 0}</strong>
+                            </div>
+                            <div class="mini-metric">
+                                <span>SPO2</span>
+                                <strong>${record.features["SPO2"] ?? 0}</strong>
+                            </div>
+                        </div>
+
+                        <div class="record-actions">
+                            <button type="button" class="secondary-btn" onclick="editRecord(${record.id})">Edit</button>
+                            <button type="button" class="ghost-btn" onclick="viewRecord(${record.id})">View</button>
+                            <button type="button" class="danger-btn" onclick="deleteRecord(${record.id})">Delete</button>
+                        </div>
+                    </article>
+                `;
+            }).join("");
+        }
+
+        async function loadRecords() {
+            const response = await fetch("/api/records");
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Unable to load records.");
+            }
+
+            renderRecords(data.records);
+        }
+
+        async function editRecord(recordId) {
+            try {
+                const response = await fetch(`/api/records/${recordId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to load record.");
+                }
+
+                fillForm(data.record);
+            } catch (error) {
+                setResult("error", "Load failed", error.message);
+            }
+        }
+
+        async function viewRecord(recordId) {
+            try {
+                const response = await fetch(`/api/records/${recordId}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to view record.");
+                }
+
+                const record = data.record;
+                setResult(
+                    "success",
+                    `${record.patient_name} - ${record.prediction_label}`,
+                    `Created ${record.created_at} and last updated ${record.updated_at}.`
+                );
+            } catch (error) {
+                setResult("error", "View failed", error.message);
+            }
+        }
+
+        async function deleteRecord(recordId) {
+            if (!window.confirm("Delete this patient record?")) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/records/${recordId}`, {
+                    method: "DELETE"
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Unable to delete record.");
+                }
+
+                if (editingRecordId === recordId) {
+                    resetForm();
+                }
+
+                setResult("success", "Record deleted", data.message);
+                await loadRecords();
+            } catch (error) {
+                setResult("error", "Delete failed", error.message);
+            }
+        }
+
+        async function createRecord() {
+            const payload = collectPayload();
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Unable to save prediction.");
+            }
+
+            resetForm();
+            setResult("success", data.prediction, data.message);
+            await loadRecords();
+        }
+
+        async function updateRecord() {
+            if (!editingRecordId) {
+                setResult("error", "No record selected", "Choose a record to edit before updating.");
+                return;
+            }
+
+            const payload = collectPayload();
+            const response = await fetch(`/api/records/${editingRecordId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Unable to update record.");
+            }
+
+            resetForm();
+            setResult("success", data.prediction, data.message);
+            await loadRecords();
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                await createRecord();
+            } catch (error) {
+                setResult("error", "Save failed", error.message);
+            }
+        });
+
+        updateButton.addEventListener("click", async () => {
+            try {
+                await updateRecord();
+            } catch (error) {
+                setResult("error", "Update failed", error.message);
+            }
+        });
+
+        resetButton.addEventListener("click", resetForm);
+        refreshButton.addEventListener("click", async () => {
+            try {
+                await loadRecords();
+                setResult("success", "Records refreshed", "The latest database records are now shown.");
+            } catch (error) {
+                setResult("error", "Refresh failed", error.message);
+            }
+        });
+
+        window.editRecord = editRecord;
+        window.viewRecord = viewRecord;
+        window.deleteRecord = deleteRecord;
+
+        resetForm();
+        loadRecords().catch((error) => {
+            setResult("error", "Startup failed", error.message);
+        });
+    </script>
+</body>
+</html>
